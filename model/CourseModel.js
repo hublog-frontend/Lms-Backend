@@ -162,7 +162,7 @@ const CourseModel = {
         INNER JOIN users AS u ON
             r.user_id = u.id
         WHERE r.course_id = ?
-        ORDER BY r.id ASC;`,
+        ORDER BY r.id DESC;`,
         [course_id],
       );
 
@@ -179,7 +179,7 @@ const CourseModel = {
         INNER JOIN users AS u ON
             d.user_id = u.id
         WHERE d.course_id = ?
-        ORDER BY d.id ASC;`,
+        ORDER BY d.id DESC;`,
         [course_id],
       );
 
