@@ -18,7 +18,7 @@ const CourseModel = {
             description,
             outcomes
         )
-        VALUES(?, ?)`,
+        VALUES(?, ?, ?, ?)`,
         [course_name, image, description, outcomes],
       );
 
