@@ -300,6 +300,269 @@ const UserModel = {
       throw new Error(error.message);
     }
   },
+
+  updateUser: async (
+    user_name,
+    email,
+    password,
+    phone_code,
+    phone,
+    whatsapp_code,
+    whatsapp_number,
+    guardian_phone_code,
+    guardian_phone,
+    gender,
+    dob,
+    linked_in,
+    instagram,
+    current_state,
+    current_city,
+    native_state,
+    native_city,
+    permanent_address,
+    pincode,
+    academic_gap,
+    enrolled_mode,
+    ready_for_relocate,
+    github_link,
+    portfolio_link,
+    portfolio_title,
+    summary,
+    skills,
+    hobbies,
+    languages,
+    service_agreement,
+    placed,
+    profile_image,
+    resume,
+    user_id,
+  ) => {
+    try {
+      const updateQuery = `UPDATE
+                                users
+                            SET
+                                user_name = ?,
+                                email = ?,
+                                password = ?,
+                                phone_code = ?,
+                                phone = ?,
+                                whatsapp_code = ?,
+                                whatsapp_number = ?,
+                                guardian_phone_code = ?,
+                                guardian_phone = ?,
+                                gender = ?,
+                                dob = ?,
+                                linked_in = ?,
+                                instagram = ?,
+                                current_state = ?,
+                                current_city = ?,
+                                native_state = ?,
+                                native_city = ?,
+                                permanent_address = ?,
+                                pincode = ?,
+                                academic_gap = ?,
+                                enrolled_mode = ?,
+                                ready_for_relocate = ?,
+                                github_link = ?,
+                                portfolio_link = ?,
+                                portfolio_title = ?,
+                                summary = ?,
+                                skills = ?,
+                                hobbies = ?,
+                                languages = ?,
+                                service_agreement = ?,
+                                placed = ?,
+                                profile_image = ?,
+                                resume = ?
+                            WHERE
+                                id = ?`;
+
+      const values = [
+        user_name,
+        email,
+        password,
+        phone_code,
+        phone,
+        whatsapp_code,
+        whatsapp_number,
+        guardian_phone_code,
+        guardian_phone,
+        gender,
+        dob,
+        linked_in,
+        instagram,
+        current_state,
+        current_city,
+        native_state,
+        native_city,
+        permanent_address,
+        pincode,
+        academic_gap,
+        enrolled_mode,
+        ready_for_relocate,
+        github_link,
+        portfolio_link,
+        portfolio_title,
+        summary,
+        skills,
+        hobbies,
+        languages,
+        service_agreement,
+        placed,
+        profile_image,
+        resume,
+        user_id,
+      ];
+
+      const [updateResult] = await pool.query(updateQuery, values);
+
+      return updateResult.affectedRows;
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  },
+
+  getUserById: async (user_id) => {
+    try {
+      const queryParams = [];
+      let userQuery = `SELECT
+                            id,
+                            user_name,
+                            email,
+                            password,
+                            phone_code,
+                            phone,
+                            whatsapp_code,
+                            whatsapp_number,
+                            guardian_phone_code,
+                            guardian_phone,
+                            gender,
+                            dob,
+                            linked_in,
+                            instagram,
+                            current_state,
+                            current_city,
+                            native_state,
+                            native_city,
+                            permanent_address,
+                            pincode,
+                            academic_gap,
+                            enrolled_mode,
+                            ready_for_relocate,
+                            github_link,
+                            portfolio_link,
+                            portfolio_title,
+                            summary,
+                            skills,
+                            hobbies,
+                            languages,
+                            service_agreement,
+                            placed,
+                            profile_image,
+                            resume,
+                            is_active,
+                            created_date
+                        FROM
+                            users
+                        WHERE 1 = 1`;
+
+      userQuery += ` AND id = ?`;
+      queryParams.push(user_id);
+
+      const [[user]] = await pool.query(userQuery, queryParams);
+
+      const [getExperience] = await pool.query(
+        `SELECT
+            id,
+            user_id,
+            company_name,
+            job_title,
+            years_of_experience,
+            location,
+            start_month,
+            start_year,
+            end_month,
+            end_year,
+            responsibility,
+            is_present_company,
+            created_date
+        FROM
+            experiences
+        WHERE
+            user_id = ?
+        ORDER BY id ASC;`,
+        [user_id],
+      );
+
+      const [getEducation] = await pool.query(
+        `SELECT
+            id,
+            user_id,
+            education,
+            register_number,
+            passed_year,
+            college_name,
+            board_name,
+            percentage,
+            branch,
+            backlog,
+            year_gap,
+            created_date
+        FROM
+            educations
+        WHERE
+            user_id = ?
+        ORDER BY id ASC;`,
+        [user_id],
+      );
+
+      const [getProjects] = await pool.query(
+        `SELECT
+            id,
+            user_id,
+            project_name,
+            link,
+            description,
+            created_date
+        FROM
+            projects
+        WHERE
+            user_id = ?
+        ORDER BY id ASC`,
+        [user_id],
+      );
+
+      const [getCertificates] = await pool.query(
+        `SELECT
+            id,
+            user_id,
+            title,
+            issuing_organization,
+            issued_year,
+            description,
+            created_date
+        FROM
+            certificates
+        WHERE
+            user_id = ?
+        ORDER BY id ASC`,
+        [user_id],
+      );
+
+      return {
+        ...user,
+        skills: JSON.parse(user.skills),
+        hobbies: JSON.parse(user.hobbies),
+        languages: JSON.parse(user.languages),
+        experience: getExperience,
+        education: getEducation,
+        projects: getProjects,
+        certificates: getCertificates,
+      };
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  },
 };
 
 module.exports = UserModel;

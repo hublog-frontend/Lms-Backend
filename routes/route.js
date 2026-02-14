@@ -27,5 +27,7 @@ router.post(
   verifyToken,
   UserController.updateCertificate,
 );
+router.post("/updateUser", verifyToken, UserController.updateUser);
+router.get("/getUserById", verifyToken, UserController.getUserById);
 
 module.exports = router;
