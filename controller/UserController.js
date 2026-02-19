@@ -308,6 +308,23 @@ const deleteProject = async (request, response) => {
   }
 };
 
+const deleteCertificate = async (request, response) => {
+  const { certificate_id } = request.query;
+  try {
+    const result = await UserModel.deleteCertificate(certificate_id);
+
+    return response.status(200).send({
+      message: "Certificate has been deleted.",
+      data: result,
+    });
+  } catch (error) {
+    response.status(500).send({
+      message: "Error while deleting certificate",
+      details: error.message,
+    });
+  }
+};
+
 module.exports = {
   updateExperience,
   updateEducation,
@@ -318,4 +335,5 @@ module.exports = {
   getAllUsers,
   deleteExperience,
   deleteProject,
+  deleteCertificate,
 };

@@ -5,6 +5,8 @@ const { verifyToken } = require("../validation/Validation");
 const LoginController = require("../controller/LoginController");
 const CourseController = require("../controller/CourseController");
 const UserController = require("../controller/UserController");
+const VideoController = require("../controller/VideoController");
+const upload = require("../validation/UploadMiddleware");
 
 router.post("/login", LoginController.login);
 router.post("/createCourse", verifyToken, CourseController.createCourse);
@@ -36,5 +38,18 @@ router.delete(
   UserController.deleteExperience,
 );
 router.delete("/deleteProject", verifyToken, UserController.deleteProject);
+
+router.post(
+  "/uploadContent",
+  upload.uploadCourseVideo.single("content"),
+  VideoController.uploadContent,
+);
+router.get("/getVideos", VideoController.getCourseVideos);
+router.delete("/deleteContent", VideoController.deleteContent);
+router.delete(
+  "/deleteCertificate",
+  verifyToken,
+  UserController.deleteCertificate,
+);
 
 module.exports = router;

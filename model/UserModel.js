@@ -248,7 +248,7 @@ const UserModel = {
   ) => {
     try {
       let affectedRows = 0;
-      const insertQuery = `INSERT INTO projects(
+      const insertQuery = `INSERT INTO certificates(
                                 user_id,
                                 title,
                                 issuing_organization,
@@ -268,7 +268,7 @@ const UserModel = {
       ];
 
       const updateQuery = `UPDATE
-                                projects
+                                certificates
                             SET
                                 title = ?,
                                 issuing_organization = ?,
@@ -649,6 +649,19 @@ const UserModel = {
       const [result] = await pool.query(`DELETE FROM projects WHERE id = ?`, [
         project_id,
       ]);
+
+      return result.affectedRows;
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  },
+
+  deleteCertificate: async (certificate_id) => {
+    try {
+      const [result] = await pool.query(
+        `DELETE FROM certificates WHERE id = ?`,
+        [certificate_id],
+      );
 
       return result.affectedRows;
     } catch (error) {
