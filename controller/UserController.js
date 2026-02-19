@@ -60,6 +60,7 @@ const updateEducation = async (request, response) => {
     year_gap,
     created_date,
     education_id,
+    is_pg,
   } = request.body;
   try {
     const result = await UserModel.updateEducation(
@@ -75,6 +76,7 @@ const updateEducation = async (request, response) => {
       year_gap,
       created_date,
       education_id,
+      is_pg,
     );
 
     return response.status(201).send({

@@ -107,6 +107,7 @@ const UserModel = {
     year_gap,
     created_date,
     education_id,
+    is_pg,
   ) => {
     try {
       let affectedRows = 0;
@@ -121,9 +122,10 @@ const UserModel = {
                                 branch,
                                 backlog,
                                 year_gap,
+                                is_pg,
                                 created_date
                             )
-                            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+                            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
       const insertValues = [
         user_id,
@@ -136,6 +138,7 @@ const UserModel = {
         branch,
         backlog,
         year_gap,
+        is_pg,
         created_date,
       ];
 
@@ -150,7 +153,8 @@ const UserModel = {
                                 percentage = ?,
                                 branch = ?,
                                 backlog = ?,
-                                year_gap = ?
+                                year_gap = ?,
+                                is_pg = ?
                             WHERE
                                 id = ?`;
 
@@ -164,6 +168,7 @@ const UserModel = {
         branch,
         backlog,
         year_gap,
+        is_pg,
         education_id,
       ];
 
@@ -507,6 +512,7 @@ const UserModel = {
             branch,
             backlog,
             year_gap,
+            is_pg,
             created_date
         FROM
             educations
