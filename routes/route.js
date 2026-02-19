@@ -29,5 +29,12 @@ router.post(
 );
 router.post("/updateUser", verifyToken, UserController.updateUser);
 router.get("/getUserById", verifyToken, UserController.getUserById);
+router.post("/getAllUsers", verifyToken, UserController.getAllUsers);
+router.delete(
+  "/deleteExperience",
+  verifyToken,
+  UserController.deleteExperience,
+);
+router.delete("/deleteProject", verifyToken, UserController.deleteProject);
 
 module.exports = router;

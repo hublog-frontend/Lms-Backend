@@ -563,6 +563,98 @@ const UserModel = {
       throw new Error(error.message);
     }
   },
+
+  getAllUsers: async (user_name, mobile, email, page, limit) => {
+    try {
+      const queryParams = [];
+      let getQuery = `SELECT
+                        id,
+                        user_name,
+                        email,
+                        password,
+                        phone_code,
+                        phone,
+                        whatsapp_code,
+                        whatsapp_number,
+                        guardian_phone_code,
+                        guardian_phone,
+                        gender,
+                        dob,
+                        is_active,
+                        created_date
+                    FROM users
+                    WHERE 1 = 1`;
+
+      let totalQuery = `SELECT
+                        COUNT(id) AS total
+                    FROM users
+                    WHERE 1 = 1`;
+
+      if (user_name) {
+        getQuery += ` AND user_name LIKE '%${user_name}%'`;
+        totalQuery += ` AND user_name LIKE '%${user_name}%'`;
+      }
+
+      if (mobile) {
+        getQuery += ` AND phone LIKE '%${mobile}%'`;
+        totalQuery += ` AND phone LIKE '%${mobile}%'`;
+      }
+
+      if (email) {
+        getQuery += ` AND email LIKE '%${email}%'`;
+        totalQuery += ` AND email LIKE '%${email}%'`;
+      }
+
+      const [totalResult] = await pool.query(totalQuery);
+
+      const total = totalResult[0]?.total || 0;
+      const pageNumber = parseInt(page, 10) || 1;
+      const limitNumber = parseInt(limit, 10) || 10;
+      const offset = (pageNumber - 1) * limitNumber;
+
+      getQuery += ` ORDER BY user_name ASC LIMIT ? OFFSET ?`;
+      queryParams.push(limitNumber, offset);
+
+      const [users] = await pool.query(getQuery, queryParams);
+
+      return {
+        users: users,
+        pagination: {
+          total: parseInt(total),
+          page: pageNumber,
+          limit: limitNumber,
+          totalPages: Math.ceil(total / limitNumber),
+        },
+      };
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  },
+
+  deleteExperience: async (experience_id) => {
+    try {
+      const [result] = await pool.query(
+        `DELETE FROM experiences WHERE id = ?`,
+        [experience_id],
+      );
+
+      return result.affectedRows;
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  },
+
+  deleteProject: async (project_id) => {
+    try {
+      const [result] = await pool.query(`DELETE FROM projects WHERE id = ?`, [
+        project_id,
+      ]);
+
+      return result.affectedRows;
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  },
 };
 
 module.exports = UserModel;

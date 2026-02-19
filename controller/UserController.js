@@ -251,6 +251,63 @@ const getUserById = async (request, response) => {
   }
 };
 
+const getAllUsers = async (request, response) => {
+  const { user_name, mobile, email, page, limit } = request.body;
+  try {
+    const user = await UserModel.getAllUsers(
+      user_name,
+      mobile,
+      email,
+      page,
+      limit,
+    );
+
+    return response.status(200).send({
+      message: "Users fetched successfully",
+      data: user,
+    });
+  } catch (error) {
+    response.status(500).send({
+      message: "Error while fetching users",
+      details: error.message,
+    });
+  }
+};
+
+const deleteExperience = async (request, response) => {
+  const { experience_id } = request.query;
+  try {
+    const result = await UserModel.deleteExperience(experience_id);
+
+    return response.status(200).send({
+      message: "Experience has been deleted.",
+      data: result,
+    });
+  } catch (error) {
+    response.status(500).send({
+      message: "Error while deleting experience",
+      details: error.message,
+    });
+  }
+};
+
+const deleteProject = async (request, response) => {
+  const { project_id } = request.query;
+  try {
+    const result = await UserModel.deleteProject(project_id);
+
+    return response.status(200).send({
+      message: "Project has been deleted.",
+      data: result,
+    });
+  } catch (error) {
+    response.status(500).send({
+      message: "Error while deleting project",
+      details: error.message,
+    });
+  }
+};
+
 module.exports = {
   updateExperience,
   updateEducation,
@@ -258,4 +315,7 @@ module.exports = {
   updateCertificate,
   updateUser,
   getUserById,
+  getAllUsers,
+  deleteExperience,
+  deleteProject,
 };
