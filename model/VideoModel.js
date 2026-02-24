@@ -1,12 +1,21 @@
 const pool = require("../config/config");
+const CommonModel = require("../model/CommonModel");
 
 const VideoModel = {
   createContent: async (module_id, title, contentData) => {
     try {
-      const { type, fileName, originalname, size, mimetype, path, content } =
-        contentData;
+      const {
+        type,
+        fileName,
+        originalname,
+        size,
+        mimetype,
+        path,
+        content,
+        duration,
+      } = contentData;
 
-      const query = `INSERT INTO course_videos (module_id, content_type, title, filename, original_name, size, mime_type, file_path, content_data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);`;
+      const query = `INSERT INTO course_videos (module_id, content_type, title, filename, original_name, size, mime_type, file_path, content_data, duration) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`;
       const values = [
         module_id,
         type,
@@ -17,6 +26,7 @@ const VideoModel = {
         mimetype,
         path,
         content,
+        duration,
       ];
 
       const [result] = await pool.query(query, values);
@@ -51,6 +61,7 @@ const VideoModel = {
             cv.mime_type,
             cv.content_type,
             cv.title,
+            cv.duration,
             m.module_name,
             m.title AS module_title
         FROM
@@ -67,7 +78,15 @@ const VideoModel = {
     `,
         [courseId, module_id],
       );
-      return videos;
+
+      const formattedResult = videos.map((item) => {
+        return {
+          ...item,
+          duration: CommonModel.formatDuration(item.duration),
+        };
+      });
+
+      return formattedResult;
     } catch (error) {
       throw new Error("Error while fetching videos: " + error.message);
     }

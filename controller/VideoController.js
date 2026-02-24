@@ -3,6 +3,7 @@ const compressVideo = require("../validation/CompressVideo");
 const fssync = require("fs");
 const fs = require("fs/promises");
 const path = require("path");
+const { getVideoDurationInSeconds } = require("get-video-duration");
 
 class VideoController {
   static async uploadContent(request, response) {
@@ -26,6 +27,7 @@ class VideoController {
           }
 
           const originalPath = request.file.path;
+          const duration = await getVideoDurationInSeconds(originalPath);
           const compressedPath = path.join(
             path.dirname(originalPath),
             "compressed-" + path.basename(originalPath),
@@ -37,6 +39,7 @@ class VideoController {
             fileName: request.file.filename,
             originalname: request.file.originalname,
             size: fssync.statSync(originalPath).size,
+            duration: duration, // in seconds
             mimetype: request.file.mimetype,
             path: `/uploads/course-videos/${request.file.filename}`, // public path (same)
           };

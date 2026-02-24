@@ -1,4 +1,5 @@
 const pool = require("../config/config");
+const CommonModel = require("../model/CommonModel");
 
 const CourseModel = {
   createCourse: async (course_name, image, description, outcomes) => {
@@ -42,7 +43,62 @@ const CourseModel = {
 
       const [courses] = await pool.query(getQuery, queryParams);
 
-      return courses;
+      const courseIds = [...new Set(courses.map((x) => x.id))];
+
+      let durationMap = new Map();
+      if (courseIds.length > 0) {
+        const [getDuration] = await pool.query(
+          `SELECT
+            IFNULL(SUM(cv.duration), 0) AS duration_period,
+            c.id AS course_id
+        FROM course AS c
+        INNER JOIN module AS m ON
+            m.course_id = c.id
+            AND m.is_active = 1
+        INNER JOIN course_videos AS cv ON
+            cv.module_id = m.id
+        WHERE cv.is_deleted = 0
+          AND c.id IN (?)
+        GROUP BY c.id `,
+          [courseIds],
+        );
+
+        getDuration.forEach((d) => durationMap.set(d.course_id, d));
+      }
+
+      let moduleMap = new Map();
+      if (courseIds.length > 0) {
+        const [getModule] = await pool.query(
+          `SELECT
+              COUNT(m.id) AS module_count,
+              c.id AS course_id
+          FROM course AS c
+          INNER JOIN module AS m ON
+              m.course_id = c.id
+          WHERE m.is_active = 1
+            AND c.id IN (?)
+          GROUP BY c.id`,
+          [courseIds],
+        );
+
+        getModule.forEach((m) => moduleMap.set(m.course_id, m));
+      }
+
+      let res = courses.map((item) => {
+        const duration = durationMap.get(item.id) || {};
+        const module = moduleMap.get(item.id) || {};
+
+        const duration_period = duration.duration_period || 0;
+        const module_count = module.module_count || 0;
+
+        return {
+          ...item,
+          duration_period: CommonModel.formatDuration(duration_period),
+          module_count: module_count,
+        };
+      });
+
+      return res;
     } catch (error) {
       throw new Error(error.message);
     }
@@ -76,7 +132,6 @@ const CourseModel = {
 
   getModules: async (course_id) => {
     try {
-      const queryParams = [];
       let getQuery = `SELECT
                           m.id,
                           m.course_id,
@@ -87,18 +142,47 @@ const CourseModel = {
                           module AS m
                       INNER JOIN course AS c ON
                           c.id = m.course_id
-                      WHERE m.is_active = 1`;
+                      WHERE m.is_active = 1 
+                          AND m.course_id = ?
+                      ORDER BY m.id ASC`;
 
-      if (course_id) {
-        getQuery += ` AND m.course_id = ?`;
-        queryParams.push(course_id);
+      const [modules] = await pool.query(getQuery, [course_id]);
+
+      const moduleIds = [...new Set(modules.map((x) => x.id))];
+
+      let moduleMap = new Map();
+      if (moduleIds.length > 0) {
+        const [result] = await pool.query(
+          `SELECT
+              COUNT(cv.id) AS video_count,
+              IFNULL(SUM(cv.duration), 0) AS duration_period,
+              cv.module_id
+          FROM course_videos AS cv
+          INNER JOIN module AS m ON
+              cv.module_id = m.id AND m.is_active = 1
+          WHERE cv.is_deleted = 0
+            AND m.id IN (?)
+          GROUP BY cv.module_id`,
+          [moduleIds],
+        );
+
+        result.forEach((m) => moduleMap.set(m.module_id, m));
       }
 
-      getQuery += ` ORDER BY m.id ASC`;
+      let res = modules.map((item) => {
+        const module = moduleMap.get(item.id) || {};
 
-      const [modules] = await pool.query(getQuery, queryParams);
+        const video_count = module.video_count || 0;
+        const duration_period = module.duration_period || 0;
 
-      return modules;
+        return {
+          ...item,
+          video_count: video_count,
+          duration_period: CommonModel.formatDuration(duration_period),
+        };
+      });
+
+      return res;
     } catch (error) {
       throw new Error(error.message);
     }
