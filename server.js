@@ -16,6 +16,7 @@ app.use(
     credentials: true,
   }),
 );
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api", Route);
 
 // Catch all undefined routes
