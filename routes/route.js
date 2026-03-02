@@ -7,6 +7,7 @@ const CourseController = require("../controller/CourseController");
 const UserController = require("../controller/UserController");
 const VideoController = require("../controller/VideoController");
 const upload = require("../validation/UploadMiddleware");
+const TestController = require("../controller/TestController");
 
 router.post("/login", LoginController.login);
 router.post("/createCourse", verifyToken, CourseController.createCourse);
@@ -51,5 +52,8 @@ router.delete(
   verifyToken,
   UserController.deleteCertificate,
 );
+
+router.post("/createTopic", verifyToken, TestController.createTopic);
+router.post("/createTest", verifyToken, TestController.createTest);
 
 module.exports = router;
