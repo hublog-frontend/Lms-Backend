@@ -1,7 +1,7 @@
 const pool = require("../config/config");
 
 const TestModel = {
-  createTopic: async (topic_id, topic_name, created_date) => {
+  createTopic: async (topic_id, topic_name, logo_image, created_date) => {
     let affectedRow = 0;
     try {
       if (!topic_id) {
@@ -15,8 +15,8 @@ const TestModel = {
         }
 
         const [insertTopic] = await pool.query(
-          `INSERT INTO topics(topic_name, created_date) VALUES(?, ?)`,
-          [topic_name, created_date],
+          `INSERT INTO topics(topic_name, logo_image, created_date) VALUES(?, ?, ?)`,
+          [topic_name, logo_image, created_date],
         );
 
         affectedRow += insertTopic.affectedRows;
@@ -31,8 +31,8 @@ const TestModel = {
         }
 
         const [updateTopic] = await pool.query(
-          `UPDATE topics SET topic_name = ? WHERE id = ?`,
-          [topic_name, topic_id],
+          `UPDATE topics SET topic_name = ?, logo_image = ? WHERE id = ?`,
+          [topic_name, logo_image, topic_id],
         );
 
         affectedRow += updateTopic.affectedRows;
@@ -46,7 +46,7 @@ const TestModel = {
 
   getTopics: async (page, pageSize) => {
     try {
-      let query = `SELECT id, topic_name FROM topics WHERE is_active = 1`;
+      let query = `SELECT id, topic_name, logo_image FROM topics WHERE is_active = 1`;
       let countQuery = `SELECT COUNT(*) as total FROM topics WHERE is_active = 1`;
       let queryParams = [];
 
@@ -72,7 +72,7 @@ const TestModel = {
 
   getTests: async (topic_id, page, pageSize) => {
     try {
-      let query = `SELECT t.id, t.topic_id, t.test_name, t.created_date, tp.topic_name FROM tests t JOIN topics tp ON t.topic_id = tp.id WHERE t.topic_id = ? AND t.is_active = 1`;
+      let query = `SELECT t.id, t.topic_id, t.test_name, t.created_date, tp.topic_name, tp.logo_image FROM tests t JOIN topics tp ON t.topic_id = tp.id WHERE t.topic_id = ? AND t.is_active = 1`;
       let countQuery = `SELECT COUNT(*) as total FROM tests WHERE topic_id = ? AND is_active = 1`;
       let queryParams = [topic_id];
 

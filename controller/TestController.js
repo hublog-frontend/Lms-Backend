@@ -1,11 +1,12 @@
 const TestModel = require("../model/TestModel");
 
 const createTopic = async (request, response) => {
-  const { topic_id, topic_name, created_date } = request.body;
+  const { topic_id, topic_name, logo_image, created_date } = request.body;
   try {
     const result = await TestModel.createTopic(
       topic_id,
       topic_name,
+      logo_image,
       created_date,
     );
 
