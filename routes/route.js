@@ -8,6 +8,7 @@ const UserController = require("../controller/UserController");
 const VideoController = require("../controller/VideoController");
 const upload = require("../validation/UploadMiddleware");
 const TestController = require("../controller/TestController");
+const AssignmentController = require("../controller/AssignmentController");
 
 router.post("/login", LoginController.login);
 router.post("/createCourse", verifyToken, CourseController.createCourse);
@@ -64,5 +65,22 @@ router.post("/addQuestions", verifyToken, TestController.addQuestions);
 router.get("/getQuestions", verifyToken, TestController.getQuestions);
 router.post("/mapTestQuestions", verifyToken, TestController.mapTestQuestions);
 router.get("/getTestQuestions", verifyToken, TestController.getTestQuestions);
+
+router.post(
+  "/createAssignment",
+  verifyToken,
+  AssignmentController.createAssignment,
+);
+router.get("/getAssignments", verifyToken, AssignmentController.getAssignments);
+router.post(
+  "/createAssignmentModule",
+  verifyToken,
+  AssignmentController.createAssignmentModule,
+);
+router.get(
+  "/getAssignmentModule",
+  verifyToken,
+  AssignmentController.getAssignmentModule,
+);
 
 module.exports = router;
