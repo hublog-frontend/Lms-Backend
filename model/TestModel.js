@@ -5,6 +5,15 @@ const TestModel = {
     let affectedRow = 0;
     try {
       if (!topic_id) {
+        const [isExists] = await pool.query(
+          `SELECT id FROM topics WHERE topic_name = ? AND is_active = 1`,
+          [topic_name],
+        );
+
+        if (isExists.length > 0) {
+          throw new Error("Topic already exists");
+        }
+
         const [insertTopic] = await pool.query(
           `INSERT INTO topics(topic_name, created_date) VALUES(?, ?)`,
           [topic_name, created_date],
@@ -12,6 +21,15 @@ const TestModel = {
 
         affectedRow += insertTopic.affectedRows;
       } else {
+        const [isExists] = await pool.query(
+          `SELECT id FROM topics WHERE topic_name = ? AND id != ? AND is_active = 1`,
+          [topic_name, topic_id],
+        );
+
+        if (isExists.length > 0) {
+          throw new Error("Topic already exists");
+        }
+
         const [updateTopic] = await pool.query(
           `UPDATE topics SET topic_name = ? WHERE id = ?`,
           [topic_name, topic_id],
@@ -26,20 +44,90 @@ const TestModel = {
     }
   },
 
+  getTopics: async (page, pageSize) => {
+    try {
+      let query = `SELECT id, topic_name FROM topics WHERE is_active = 1`;
+      let countQuery = `SELECT COUNT(*) as total FROM topics WHERE is_active = 1`;
+      let queryParams = [];
+
+      if (page && pageSize) {
+        const offset = (page - 1) * pageSize;
+        query += ` ORDER BY id DESC LIMIT ? OFFSET ?`;
+        queryParams.push(parseInt(pageSize), parseInt(offset));
+      } else {
+        query += ` ORDER BY id DESC`;
+      }
+
+      const [topics] = await pool.query(query, queryParams);
+      const [totalCount] = await pool.query(countQuery);
+
+      return {
+        topics,
+        total: totalCount[0].total,
+      };
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  },
+
+  getTests: async (topic_id, page, pageSize) => {
+    try {
+      let query = `SELECT t.id, t.topic_id, t.test_name, t.created_date, tp.topic_name FROM tests t JOIN topics tp ON t.topic_id = tp.id WHERE t.topic_id = ? AND t.is_active = 1`;
+      let countQuery = `SELECT COUNT(*) as total FROM tests WHERE topic_id = ? AND is_active = 1`;
+      let queryParams = [topic_id];
+
+      if (page && pageSize) {
+        const offset = (page - 1) * pageSize;
+        query += ` ORDER BY t.id DESC LIMIT ? OFFSET ?`;
+        queryParams.push(parseInt(pageSize), parseInt(offset));
+      } else {
+        query += ` ORDER BY t.id DESC`;
+      }
+
+      const [tests] = await pool.query(query, queryParams);
+      const [totalCount] = await pool.query(countQuery, [topic_id]);
+
+      return {
+        tests,
+        total: totalCount[0].total,
+      };
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  },
+
   createTest: async (test_id, topic_id, test_name, created_date) => {
     let affectedRow = 0;
     try {
       if (!test_id) {
+        const [isExists] = await pool.query(
+          `SELECT id FROM tests WHERE topic_id = ? AND test_name = ? AND is_active = 1`,
+          [topic_id, test_name],
+        );
+
+        if (isExists.length > 0) {
+          throw new Error("Test already exists");
+        }
+
         const [insertTest] = await pool.query(
-          `INSERT INTO tests(topic_id, test_name, created_date) VALUES(?, ?)`,
+          `INSERT INTO tests(topic_id, test_name, created_date) VALUES(?, ?, ?)`,
           [topic_id, test_name, created_date],
         );
 
         affectedRow += insertTest.affectedRows;
       } else {
+        const [isExists] = await pool.query(
+          `SELECT id FROM tests WHERE topic_id = ? AND test_name = ? AND id != ? AND is_active = 1`,
+          [topic_id, test_name, test_id],
+        );
+
+        if (isExists.length > 0) {
+          throw new Error("Test already exists");
+        }
+
         const [updateTest] = await pool.query(
           `UPDATE tests SET test_name = ? WHERE id = ?`,
-          [topic_name, test_id],
+          [test_name, test_id],
         );
 
         affectedRow += updateTest.affectedRows;
@@ -51,16 +139,200 @@ const TestModel = {
     }
   },
 
-  insertTestResult: async () => {
+  insertTestResult: async (test_id, test_results, created_date) => {
     try {
+      const [insertHistory] = await pool.query(
+        `INSERT INTO test_history(test_id, created_date)
+        VALUES(?, ?)`,
+        [test_id, created_date],
+      );
+
+      const history_id = insertHistory.insertId;
+
+      const values = test_results.map((item) => [
+        history_id,
+        item.question_id,
+        item.selected_option,
+        item.mark,
+        item.is_attended,
+        created_date,
+      ]);
+
       const insertQuery = `INSERT INTO test_result(
                                 history_id,
                                 question_id,
                                 selected_option,
                                 mark,
+                                is_attended,
                                 created_date
                             )
-                            VALUES(?, ?, ?, ?, ?)`;
+                            VALUES ?`;
+
+      const [insertResult] = await pool.query(insertQuery, [values]);
+
+      return insertResult.affectedRows;
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  },
+
+  getTestHistory: async (test_id, page, pageSize) => {
+    try {
+      let query = `SELECT th.id, th.test_id, th.created_date, t.test_name FROM test_history th JOIN tests t ON th.test_id = t.id WHERE th.test_id = ? AND th.is_active = 1`;
+      let countQuery = `SELECT COUNT(*) as total FROM test_history WHERE test_id = ? AND is_active = 1`;
+      let queryParams = [test_id];
+
+      if (page && pageSize) {
+        const offset = (page - 1) * pageSize;
+        query += ` ORDER BY th.id ASC LIMIT ? OFFSET ?`;
+        queryParams.push(parseInt(pageSize), parseInt(offset));
+      } else {
+        query += ` ORDER BY th.id ASC`;
+      }
+
+      const [testHistory] = await pool.query(query, queryParams);
+      const [totalCount] = await pool.query(countQuery, [test_id]);
+
+      return {
+        testHistory,
+        total: totalCount[0].total,
+      };
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  },
+
+  getTestResult: async (history_id) => {
+    try {
+      const [testResult] = await pool.query(
+        `SELECT tr.id, tr.history_id, tr.question_id, tr.selected_option, tr.mark, tr.is_attended, tr.created_date, q.question, q.correct_answer, q.option_a, q.option_b, q.option_c, q.option_d 
+         FROM test_result tr 
+         JOIN questions q ON tr.question_id = q.id 
+         WHERE tr.history_id = ? AND tr.is_active = 1 
+         ORDER BY tr.id ASC`,
+        [history_id],
+      );
+
+      const summary = {
+        total_questions: testResult.length,
+        attended_questions: testResult.filter((r) => r.is_attended == 1 || r.is_attended == true).length,
+        total_marks: testResult.reduce((sum, r) => sum + (parseFloat(r.mark) || 0), 0),
+      };
+
+      return {
+        testResult,
+        summary,
+      };
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  },
+
+  addQuestions: async (questions) => {
+    try {
+      let isExists = false;
+      for (const question of questions) {
+        const [isExists] = await pool.query(`SELECT id FROM questions WHERE question = ? AND correct_answer = ? AND option_a = ? AND option_b = ? AND option_c = ? AND option_d = ? AND is_active = 1`, [question.question, question.correct_answer, question.option_a, question.option_b, question.option_c, question.option_d]);
+        if (isExists.length > 0) {
+          isExists = true;
+          break;
+        }
+      }
+      if (isExists) {
+        throw new Error("Question already exists");
+      }
+      const values = questions.map((item) => [
+        item.question,
+        item.correct_answer,
+        item.option_a,
+        item.option_b,
+        item.option_c,
+        item.option_d
+      ]);
+
+      const insertQuery = `INSERT INTO questions(
+                                question,
+                                correct_answer,
+                                option_a,
+                                option_b,
+                                option_c,
+                                option_d
+                            )
+                            VALUES ?`;
+
+
+      const [insertResult] = await pool.query(insertQuery, [values]);
+
+      return insertResult.affectedRows;
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  },
+
+  getQuestions: async (page, pageSize) => {
+    try {
+      let query = `SELECT id, question, correct_answer, option_a, option_b, option_c, option_d FROM questions WHERE is_active = 1`;
+      let countQuery = `SELECT COUNT(*) as total FROM questions WHERE is_active = 1`;
+      let queryParams = [];
+
+      if (page && pageSize) {
+        const offset = (page - 1) * pageSize;
+        query += ` ORDER BY id ASC LIMIT ? OFFSET ?`;
+        queryParams.push(parseInt(pageSize), parseInt(offset));
+      } else {
+        query += ` ORDER BY id ASC`;
+      }
+
+      const [questions] = await pool.query(query, queryParams);
+      const [totalCount] = await pool.query(countQuery);
+
+      return {
+        questions,
+        total: totalCount[0].total,
+      };
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  },
+
+  mapTestQuestions: async (test_id, questions, created_date) => {
+    try {
+      let isExists = false;
+      for (const question of questions) {
+        const [isExists] = await pool.query(`SELECT id FROM test_questions WHERE test_id = ? AND question_id = ? AND is_active = 1`, [test_id, question.question_id]);
+        if (isExists.length > 0) {
+          isExists = true;
+          break;
+        }
+      }
+      if (isExists) {
+        throw new Error("Question already exists");
+      }
+      const values = questions.map((item) => [
+        test_id,
+        item.question_id,
+        created_date,
+      ]);
+
+      const insertQuery = `INSERT INTO test_questions(
+                                test_id,
+                                question_id,
+                                created_date
+                            )
+                            VALUES ?`;
+
+      const [insertResult] = await pool.query(insertQuery, [values]);
+
+      return insertResult.affectedRows;
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  },
+
+  getTestQuestions: async (test_id) => {
+    try {
+      const [testQuestions] = await pool.query(`SELECT tq.id, tq.test_id, tq.question_id, q.question, q.option_a, q.option_b, q.option_c, q.option_d FROM test_questions tq JOIN questions q ON tq.question_id = q.id WHERE tq.test_id = ? AND tq.is_active = 1 ORDER BY tq.id ASC`, [test_id]);
+      return testQuestions;
     } catch (error) {
       throw new Error(error.message);
     }

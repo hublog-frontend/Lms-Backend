@@ -55,5 +55,14 @@ router.delete(
 
 router.post("/createTopic", verifyToken, TestController.createTopic);
 router.post("/createTest", verifyToken, TestController.createTest);
+router.get("/getTopics", verifyToken, TestController.getTopics);
+router.get("/getTests", verifyToken, TestController.getTests);
+router.post("/insertTestResult", verifyToken, TestController.insertTestResult);
+router.get("/getTestHistory", verifyToken, TestController.getTestHistory);
+router.get("/getTestResult", verifyToken, TestController.getTestResult);
+router.post("/addQuestions", verifyToken, TestController.addQuestions);
+router.get("/getQuestions", verifyToken, TestController.getQuestions);
+router.post("/mapTestQuestions", verifyToken, TestController.mapTestQuestions);
+router.get("/getTestQuestions", verifyToken, TestController.getTestQuestions);
 
 module.exports = router;
