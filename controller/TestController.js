@@ -22,6 +22,22 @@ const createTopic = async (request, response) => {
   }
 };
 
+const deleteTopic = async (request, response) => {
+  const { topic_id } = request.body;
+  try {
+    const result = await TestModel.deleteTopic(topic_id);
+    return response.status(200).send({
+      message: "Topic deleted successfully",
+      data: result,
+    });
+  } catch (error) {
+    response.status(500).send({
+      message: "Error while deleting topic",
+      details: error.message,
+    });
+  }
+};
+
 const createTest = async (request, response) => {
   const { test_id, topic_id, test_name, created_date } = request.body;
   try {
@@ -160,10 +176,30 @@ const getQuestions = async (request, response) => {
   }
 };
 
+const deleteQuestion = async (request, response) => {
+  const { question_id } = request.body;
+  try {
+    const result = await TestModel.deleteQuestion(question_id);
+    return response.status(200).send({
+      message: "Question deleted successfully",
+      data: result,
+    });
+  } catch (error) {
+    response.status(500).send({
+      message: "Error while deleting question",
+      details: error.message,
+    });
+  }
+};
+
 const mapTestQuestions = async (request, response) => {
   const { test_id, questions, created_date } = request.body;
   try {
-    const result = await TestModel.mapTestQuestions(test_id, questions, created_date);
+    const result = await TestModel.mapTestQuestions(
+      test_id,
+      questions,
+      created_date,
+    );
     return response.status(201).send({
       message: "Test questions mapped successfully",
       data: result,
@@ -204,4 +240,6 @@ module.exports = {
   getQuestions,
   mapTestQuestions,
   getTestQuestions,
+  deleteTopic,
+  deleteQuestion,
 };

@@ -70,6 +70,25 @@ const TestModel = {
     }
   },
 
+  deleteTopic: async (topic_id) => {
+    try {
+      const [isExists] = await pool.query(
+        `SELECT id FROM tests WHERE topic_id = ? AND is_active = 1`,
+        [topic_id],
+      );
+      if (isExists.length > 0) {
+        throw new Error("Topic cannot be deleted as it has tests");
+      }
+      const [deleteTopic] = await pool.query(
+        `DELETE FROM topics WHERE id = ?`,
+        [topic_id],
+      );
+      return deleteTopic.affectedRows;
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  },
+
   getTests: async (topic_id, page, pageSize) => {
     try {
       let query = `SELECT t.id, t.topic_id, t.test_name, t.created_date, tp.topic_name, tp.logo_image FROM tests t JOIN topics tp ON t.topic_id = tp.id WHERE t.topic_id = ? AND t.is_active = 1`;
@@ -215,8 +234,13 @@ const TestModel = {
 
       const summary = {
         total_questions: testResult.length,
-        attended_questions: testResult.filter((r) => r.is_attended == 1 || r.is_attended == true).length,
-        total_marks: testResult.reduce((sum, r) => sum + (parseFloat(r.mark) || 0), 0),
+        attended_questions: testResult.filter(
+          (r) => r.is_attended == 1 || r.is_attended == true,
+        ).length,
+        total_marks: testResult.reduce(
+          (sum, r) => sum + (parseFloat(r.mark) || 0),
+          0,
+        ),
       };
 
       return {
@@ -232,7 +256,17 @@ const TestModel = {
     try {
       let isExists = false;
       for (const question of questions) {
-        const [isExists] = await pool.query(`SELECT id FROM questions WHERE question = ? AND correct_answer = ? AND option_a = ? AND option_b = ? AND option_c = ? AND option_d = ? AND is_active = 1`, [question.question, question.correct_answer, question.option_a, question.option_b, question.option_c, question.option_d]);
+        const [isExists] = await pool.query(
+          `SELECT id FROM questions WHERE question = ? AND correct_answer = ? AND option_a = ? AND option_b = ? AND option_c = ? AND option_d = ? AND is_active = 1`,
+          [
+            question.question,
+            question.correct_answer,
+            question.option_a,
+            question.option_b,
+            question.option_c,
+            question.option_d,
+          ],
+        );
         if (isExists.length > 0) {
           isExists = true;
           break;
@@ -247,7 +281,7 @@ const TestModel = {
         item.option_a,
         item.option_b,
         item.option_c,
-        item.option_d
+        item.option_d,
       ]);
 
       const insertQuery = `INSERT INTO questions(
@@ -259,7 +293,6 @@ const TestModel = {
                                 option_d
                             )
                             VALUES ?`;
-
 
       const [insertResult] = await pool.query(insertQuery, [values]);
 
@@ -275,13 +308,12 @@ const TestModel = {
       let countQuery = `SELECT COUNT(*) as total FROM questions WHERE is_active = 1`;
       let queryParams = [];
 
-      if (page && pageSize) {
-        const offset = (page - 1) * pageSize;
-        query += ` ORDER BY id ASC LIMIT ? OFFSET ?`;
-        queryParams.push(parseInt(pageSize), parseInt(offset));
-      } else {
-        query += ` ORDER BY id ASC`;
-      }
+      const pageNumber = parseInt(page, 10) || 1;
+      const limitNumber = parseInt(pageSize, 10) || 10;
+      const offset = (pageNumber - 1) * limitNumber;
+
+      query += ` ORDER BY id ASC LIMIT ? OFFSET ?`;
+      queryParams.push(limitNumber, offset);
 
       const [questions] = await pool.query(query, queryParams);
       const [totalCount] = await pool.query(countQuery);
@@ -289,7 +321,31 @@ const TestModel = {
       return {
         questions,
         total: totalCount[0].total,
+        pagination: {
+          total: totalCount[0].total,
+          page: pageNumber,
+          limit: limitNumber,
+          totalPages: Math.ceil(totalCount[0].total / limitNumber),
+        },
       };
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  },
+
+  deleteQuestion: async (question_id) => {
+    try {
+      const [isExists] = await pool.query(
+        `SELECT id FROM test_questions WHERE question_id = ? AND is_active = 1`,
+        [question_id],
+      );
+      if (isExists.length > 0) {
+        throw new Error("Question is mapped to some test");
+      }
+      const [result] = await pool.query(`DELETE FROM questions WHERE id = ?`, [
+        question_id,
+      ]);
+      return result.affectedRows;
     } catch (error) {
       throw new Error(error.message);
     }
@@ -299,7 +355,10 @@ const TestModel = {
     try {
       let isExists = false;
       for (const question of questions) {
-        const [isExists] = await pool.query(`SELECT id FROM test_questions WHERE test_id = ? AND question_id = ? AND is_active = 1`, [test_id, question.question_id]);
+        const [isExists] = await pool.query(
+          `SELECT id FROM test_questions WHERE test_id = ? AND question_id = ? AND is_active = 1`,
+          [test_id, question.question_id],
+        );
         if (isExists.length > 0) {
           isExists = true;
           break;
@@ -331,7 +390,10 @@ const TestModel = {
 
   getTestQuestions: async (test_id) => {
     try {
-      const [testQuestions] = await pool.query(`SELECT tq.id, tq.test_id, tq.question_id, q.question, q.option_a, q.option_b, q.option_c, q.option_d FROM test_questions tq JOIN questions q ON tq.question_id = q.id WHERE tq.test_id = ? AND tq.is_active = 1 ORDER BY tq.id ASC`, [test_id]);
+      const [testQuestions] = await pool.query(
+        `SELECT tq.id, tq.test_id, tq.question_id, q.question, q.option_a, q.option_b, q.option_c, q.option_d FROM test_questions tq JOIN questions q ON tq.question_id = q.id WHERE tq.test_id = ? AND tq.is_active = 1 ORDER BY tq.id ASC`,
+        [test_id],
+      );
       return testQuestions;
     } catch (error) {
       throw new Error(error.message);

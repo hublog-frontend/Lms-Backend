@@ -83,4 +83,7 @@ router.get(
   AssignmentController.getAssignmentModule,
 );
 
+router.delete("/deleteTopic", verifyToken, TestController.deleteTopic);
+router.delete("/deleteQuestion", verifyToken, TestController.deleteQuestion);
+
 module.exports = router;
