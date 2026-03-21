@@ -42,7 +42,7 @@ const getCompanyQuestions = async (req, res) => {
 
 const deleteCompanyQuestion = async (req, res) => {
   try {
-    const { company_id } = req.params;
+    const { company_id } = req.query;
     const result = await CompanyModel.deleteCompanyQuestion(company_id);
     return res
       .status(200)
@@ -66,7 +66,7 @@ const addToFavorite = async (req, res) => {
 
 const removeFromFavorite = async (req, res) => {
   try {
-    const { company_id, user_id } = req.body;
+    const { company_id, user_id } = req.query;
     const result = await CompanyModel.removeFromFavorite(company_id, user_id);
     return res
       .status(200)
@@ -114,7 +114,7 @@ const getCategory = async (req, res) => {
 
 const deleteCategory = async (req, res) => {
   try {
-    const { category_id } = req.params;
+    const { category_id } = req.query;
     const result = await CompanyModel.deleteCategory(category_id);
     return res
       .status(200)

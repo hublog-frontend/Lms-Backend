@@ -23,7 +23,7 @@ const createTopic = async (request, response) => {
 };
 
 const deleteTopic = async (request, response) => {
-  const { topic_id } = request.body;
+  const { topic_id } = request.query;
   try {
     const result = await TestModel.deleteTopic(topic_id);
     return response.status(200).send({
@@ -177,7 +177,7 @@ const getQuestions = async (request, response) => {
 };
 
 const deleteQuestion = async (request, response) => {
-  const { question_id } = request.body;
+  const { question_id } = request.query;
   try {
     const result = await TestModel.deleteQuestion(question_id);
     return response.status(200).send({
