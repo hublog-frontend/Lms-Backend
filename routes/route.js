@@ -10,6 +10,7 @@ const upload = require("../validation/UploadMiddleware");
 const TestController = require("../controller/TestController");
 const AssignmentController = require("../controller/AssignmentController");
 const CompanyController = require("../controller/CompanyController");
+const BookmarkController = require("../controller/BookmarkController");
 
 router.post("/login", LoginController.login);
 router.post("/createCourse", verifyToken, CourseController.createCourse);
@@ -109,9 +110,16 @@ router.post(
   CompanyController.removeFromFavorite,
 );
 router.get(
-  "/getFavoriteCompanies",
+  "/getFavoriteCompanies/:user_id",
   verifyToken,
   CompanyController.getFavoriteCompanies,
 );
+
+router.post("/addBookmark", verifyToken, BookmarkController.addBookmark);
+router.post("/removeBookmark", verifyToken, BookmarkController.removeBookmark);
+
+router.post("/addCategory", verifyToken, CompanyController.addCategory);
+router.get("/getCategory", verifyToken, CompanyController.getCategory);
+router.delete("/deleteCategory", verifyToken, CompanyController.deleteCategory);
 
 module.exports = router;

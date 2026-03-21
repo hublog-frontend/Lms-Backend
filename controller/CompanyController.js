@@ -2,11 +2,23 @@ const CompanyModel = require("../model/CompanyModel");
 
 const addCompanyQuestion = async (req, res) => {
   try {
-    const { company_name, company_logo, skills } = req.body;
-    const result = await CompanyModel.addCompanyQuestion(
+    const {
+      company_id,
       company_name,
       company_logo,
       skills,
+      created_date,
+      attachment_title,
+      attachment,
+    } = req.body;
+    const result = await CompanyModel.addCompanyQuestions(
+      company_id,
+      company_name,
+      company_logo,
+      skills,
+      created_date,
+      attachment_title,
+      attachment,
     );
     return res
       .status(200)
@@ -76,6 +88,42 @@ const getFavoriteCompanies = async (req, res) => {
   }
 };
 
+const addCategory = async (req, res) => {
+  try {
+    const { category_id, category_name } = req.body;
+    const result = await CompanyModel.addCategory(category_id, category_name);
+    return res
+      .status(200)
+      .json({ message: "Category added successfully", result });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+const getCategory = async (req, res) => {
+  try {
+    const { category_name } = req.query;
+    const result = await CompanyModel.getCategory(category_name);
+    return res
+      .status(200)
+      .json({ message: "Category fetched successfully", result });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+const deleteCategory = async (req, res) => {
+  try {
+    const { category_id } = req.params;
+    const result = await CompanyModel.deleteCategory(category_id);
+    return res
+      .status(200)
+      .json({ message: "Category deleted successfully", result });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   addCompanyQuestion,
   getCompanyQuestions,
@@ -83,4 +131,7 @@ module.exports = {
   addToFavorite,
   removeFromFavorite,
   getFavoriteCompanies,
+  addCategory,
+  getCategory,
+  deleteCategory,
 };
