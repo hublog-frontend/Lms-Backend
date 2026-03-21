@@ -257,8 +257,9 @@ const TestModel = {
       let isExists = false;
       for (const question of questions) {
         const [isExists] = await pool.query(
-          `SELECT id FROM questions WHERE question = ? AND correct_answer = ? AND option_a = ? AND option_b = ? AND option_c = ? AND option_d = ? AND is_active = 1`,
+          `SELECT id FROM questions WHERE category_name = ? AND question = ? AND correct_answer = ? AND option_a = ? AND option_b = ? AND option_c = ? AND option_d = ? AND is_active = 1`,
           [
+            question.category_name,
             question.question,
             question.correct_answer,
             question.option_a,
@@ -276,6 +277,7 @@ const TestModel = {
         throw new Error("Question already exists");
       }
       const values = questions.map((item) => [
+        item.category_name,
         item.question,
         item.correct_answer,
         item.option_a,
@@ -285,6 +287,7 @@ const TestModel = {
       ]);
 
       const insertQuery = `INSERT INTO questions(
+                                category_name,
                                 question,
                                 correct_answer,
                                 option_a,
@@ -302,11 +305,17 @@ const TestModel = {
     }
   },
 
-  getQuestions: async (page, pageSize) => {
+  getQuestions: async (page, pageSize, category_name) => {
     try {
-      let query = `SELECT id, question, correct_answer, option_a, option_b, option_c, option_d FROM questions WHERE is_active = 1`;
+      let query = `SELECT id, category_name, question, correct_answer, option_a, option_b, option_c, option_d FROM questions WHERE is_active = 1`;
       let countQuery = `SELECT COUNT(*) as total FROM questions WHERE is_active = 1`;
       let queryParams = [];
+
+      if (category_name) {
+        query += ` AND category_name = ?`;
+        countQuery += ` AND category_name = ?`;
+        queryParams.push(category_name);
+      }
 
       const pageNumber = parseInt(page, 10) || 1;
       const limitNumber = parseInt(pageSize, 10) || 10;

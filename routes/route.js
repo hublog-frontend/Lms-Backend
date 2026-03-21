@@ -9,6 +9,7 @@ const VideoController = require("../controller/VideoController");
 const upload = require("../validation/UploadMiddleware");
 const TestController = require("../controller/TestController");
 const AssignmentController = require("../controller/AssignmentController");
+const CompanyController = require("../controller/CompanyController");
 
 router.post("/login", LoginController.login);
 router.post("/createCourse", verifyToken, CourseController.createCourse);
@@ -85,5 +86,32 @@ router.get(
 
 router.delete("/deleteTopic", verifyToken, TestController.deleteTopic);
 router.delete("/deleteQuestion", verifyToken, TestController.deleteQuestion);
+
+router.post(
+  "/addCompanyQuestion",
+  verifyToken,
+  CompanyController.addCompanyQuestion,
+);
+router.get(
+  "/getCompanyQuestions",
+  verifyToken,
+  CompanyController.getCompanyQuestions,
+);
+router.delete(
+  "/deleteCompanyQuestion",
+  verifyToken,
+  CompanyController.deleteCompanyQuestion,
+);
+router.post("/addToFavorite", verifyToken, CompanyController.addToFavorite);
+router.post(
+  "/removeFromFavorite",
+  verifyToken,
+  CompanyController.removeFromFavorite,
+);
+router.get(
+  "/getFavoriteCompanies",
+  verifyToken,
+  CompanyController.getFavoriteCompanies,
+);
 
 module.exports = router;
