@@ -200,11 +200,11 @@ const CompanyModel = {
           throw new Error("Category already exists");
         }
         const query = `INSERT INTO question_category (category_name) VALUES (?)`;
-        const result = await pool.query(query, [category_name]);
+        const [result] = await pool.query(query, [category_name]);
         affectedRows += result.affectedRows;
       } else {
         const query = `UPDATE question_category SET category_name = ? WHERE id = ?`;
-        const result = await pool.query(query, [category_name, category_id]);
+        const [result] = await pool.query(query, [category_name, category_id]);
         affectedRows += result.affectedRows;
       }
       return affectedRows;

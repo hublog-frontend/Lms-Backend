@@ -161,12 +161,12 @@ const addQuestions = async (request, response) => {
 };
 
 const getQuestions = async (request, response) => {
-  const { page, pageSize, category_id } = request.query;
+  const { page, pageSize, category_id } = request.body;
   try {
     const result = await TestModel.getQuestions(page, pageSize, category_id);
     return response.status(200).send({
       message: "Questions fetched successfully",
-      ...result,
+      data: result,
     });
   } catch (error) {
     response.status(500).send({

@@ -327,11 +327,13 @@ const TestModel = {
                           qc.id = q.category_id
                         WHERE q.is_active = 1`;
       let queryParams = [];
+      let countQueryParams = [];
 
       if (category_id) {
         query += ` AND q.category_id = ?`;
         countQuery += ` AND q.category_id = ?`;
         queryParams.push(category_id);
+        countQueryParams.push(category_id);
       }
 
       const pageNumber = parseInt(page, 10) || 1;
@@ -342,7 +344,7 @@ const TestModel = {
       queryParams.push(limitNumber, offset);
 
       const [questions] = await pool.query(query, queryParams);
-      const [totalCount] = await pool.query(countQuery);
+      const [totalCount] = await pool.query(countQuery, countQueryParams);
 
       return {
         questions,

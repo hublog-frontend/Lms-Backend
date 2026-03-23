@@ -94,7 +94,7 @@ const addCategory = async (req, res) => {
     const result = await CompanyModel.addCategory(category_id, category_name);
     return res
       .status(200)
-      .json({ message: "Category added successfully", result });
+      .json({ message: "Category added successfully", data: result });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
