@@ -91,7 +91,19 @@ const TestModel = {
 
   getTests: async (topic_id, page, pageSize) => {
     try {
-      let query = `SELECT t.id, t.topic_id, t.test_name, t.created_date, tp.topic_name, tp.logo_image FROM tests t JOIN topics tp ON t.topic_id = tp.id WHERE t.topic_id = ? AND t.is_active = 1`;
+      let query = `SELECT
+                      t.id,
+                      t.topic_id,
+                      t.test_name,
+                      t.created_date,
+                      tp.topic_name,
+                      tp.logo_image
+                  FROM
+                      tests t
+                  JOIN topics tp ON
+                      t.topic_id = tp.id
+                  WHERE
+                      t.topic_id = ? AND t.is_active = 1`;
       let countQuery = `SELECT COUNT(*) as total FROM tests WHERE topic_id = ? AND is_active = 1`;
       let queryParams = [topic_id];
 
@@ -103,11 +115,29 @@ const TestModel = {
         query += ` ORDER BY t.id DESC`;
       }
 
-      const [tests] = await pool.query(query, queryParams);
-      const [totalCount] = await pool.query(countQuery, [topic_id]);
+      const [[tests], [totalCount]] = await Promise.all([
+        pool.query(query, queryParams),
+        pool.query(countQuery, [topic_id]),
+      ]);
+
+      const testIds = [...new Set(tests.map((test) => test.id))];
+
+      let questionCountMap = new Map();
+
+      if (testIds.length > 0) {
+        const [questionCounts] = await pool.query(
+          `SELECT COUNT(id) as total_questions, test_id FROM test_questions WHERE test_id IN (?) AND is_active = 1 GROUP BY test_id`,
+          [testIds],
+        );
+
+        questionCounts.forEach((r) => questionCountMap.set(r.test_id, r));
+      }
 
       return {
-        tests,
+        tests: tests.map((test) => ({
+          ...test,
+          total_questions: questionCountMap.get(test.id)?.total_questions || 0,
+        })),
         total: totalCount[0].total,
       };
     } catch (error) {
