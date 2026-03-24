@@ -215,7 +215,7 @@ const CompanyModel = {
 
   getCategory: async (category_name) => {
     try {
-      let query = `SELECT id, category_name FROM question_category WHERE is_active = 1`;
+      let query = `SELECT id, category_name AS name FROM question_category WHERE is_active = 1`;
       if (category_name) {
         query += ` AND category_name LIKE '%${category_name}%'`;
       }
