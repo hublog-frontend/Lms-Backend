@@ -11,6 +11,7 @@ const TestController = require("../controller/TestController");
 const AssignmentController = require("../controller/AssignmentController");
 const CompanyController = require("../controller/CompanyController");
 const BookmarkController = require("../controller/BookmarkController");
+const CompilerController = require("../controller/CompilerController");
 
 router.post("/login", LoginController.login);
 router.post("/createCourse", verifyToken, CourseController.createCourse);
@@ -127,5 +128,8 @@ router.post("/removeBookmark", verifyToken, BookmarkController.removeBookmark);
 router.post("/addCategory", verifyToken, CompanyController.addCategory);
 router.get("/getCategory", verifyToken, CompanyController.getCategory);
 router.delete("/deleteCategory", verifyToken, CompanyController.deleteCategory);
+
+router.post("/runCode", verifyToken, CompilerController.executeCode);
+router.post("/submitCode", verifyToken, CompilerController.executeCode);
 
 module.exports = router;

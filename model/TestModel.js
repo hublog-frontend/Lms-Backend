@@ -97,13 +97,18 @@ const TestModel = {
                       t.test_name,
                       t.created_date,
                       tp.topic_name,
-                      tp.logo_image
+                      tp.logo_image,
+                      GROUP_CONCAT(tq.question_id) AS question_ids,
+                      COUNT(tq.question_id) AS question_count
                   FROM
                       tests t
                   JOIN topics tp ON
                       t.topic_id = tp.id
+                  LEFT JOIN test_questions tq ON
+                    t.id = tq.test_id AND tq.is_active = 1
                   WHERE
-                      t.topic_id = ? AND t.is_active = 1`;
+                      t.topic_id = ? AND t.is_active = 1
+                  GROUP BY t.id`;
       let countQuery = `SELECT COUNT(*) as total FROM tests WHERE topic_id = ? AND is_active = 1`;
       let queryParams = [topic_id];
 
@@ -286,7 +291,7 @@ const TestModel = {
     try {
       let isExists = false;
       for (const question of questions) {
-        const [isExists] = await pool.query(
+        const [isExistsResult] = await pool.query(
           `SELECT id FROM questions WHERE category_id = ? AND question = ? AND correct_answer = ? AND option_a = ? AND option_b = ? AND option_c = ? AND option_d = ? AND is_active = 1`,
           [
             question.category_id,
@@ -309,11 +314,17 @@ const TestModel = {
       const values = questions.map((item) => [
         item.category_id,
         item.question,
-        item.correct_answer,
-        item.option_a,
-        item.option_b,
-        item.option_c,
-        item.option_d,
+        item.correct_answer || null,
+        item.option_a || null,
+        item.option_b || null,
+        item.option_c || null,
+        item.option_d || null,
+        item.question_type || "MCQ",
+        item.description || null,
+        item.constraints || null,
+        item.difficulty || "EASY",
+        item.sample_input || null,
+        item.sample_output || null,
       ]);
 
       const insertQuery = `INSERT INTO questions(
@@ -323,7 +334,13 @@ const TestModel = {
                                 option_a,
                                 option_b,
                                 option_c,
-                                option_d
+                                option_d,
+                                question_type,
+                                description,
+                                constraints,
+                                difficulty,
+                                sample_input,
+                                sample_output
                             )
                             VALUES ?`;
 
@@ -335,7 +352,7 @@ const TestModel = {
     }
   },
 
-  getQuestions: async (page, pageSize, category_id) => {
+  getQuestions: async (page, pageSize, category_id, question_type) => {
     try {
       let query = `SELECT
                       q.id,
@@ -346,7 +363,14 @@ const TestModel = {
                       q.option_a,
                       q.option_b,
                       q.option_c,
-                      q.option_d
+                      q.option_d,
+                      q.question_type,
+                      q.description,
+                      q.constraints,
+                      q.difficulty,
+                      q.sample_input,
+                      q.sample_output,
+                      q.test_cases
                   FROM questions AS q
                   LEFT JOIN question_category AS qc ON
                     qc.id = q.category_id
@@ -364,6 +388,13 @@ const TestModel = {
         countQuery += ` AND q.category_id = ?`;
         queryParams.push(category_id);
         countQueryParams.push(category_id);
+      }
+
+      if (question_type) {
+        query += ` AND q.question_type = ?`;
+        countQuery += ` AND q.question_type = ?`;
+        queryParams.push(question_type);
+        countQueryParams.push(question_type);
       }
 
       const pageNumber = parseInt(page, 10) || 1;
@@ -411,20 +442,14 @@ const TestModel = {
 
   mapTestQuestions: async (test_id, questions, created_date) => {
     try {
-      let isExists = false;
-      for (const question of questions) {
-        const [isExists] = await pool.query(
-          `SELECT id FROM test_questions WHERE test_id = ? AND question_id = ? AND is_active = 1`,
-          [test_id, question.question_id],
-        );
-        if (isExists.length > 0) {
-          isExists = true;
-          break;
-        }
-      }
-      if (isExists) {
-        throw new Error("Question already exists");
-      }
+      // First, remove existing mappings for this test to perform a fresh sync
+      await pool.query(
+        "UPDATE test_questions SET is_active = 0 WHERE test_id = ?",
+        [test_id],
+      );
+
+      if (questions.length === 0) return 0;
+
       const values = questions.map((item) => [
         test_id,
         item.question_id,
@@ -448,10 +473,20 @@ const TestModel = {
 
   getTestQuestions: async (test_id) => {
     try {
-      const [testQuestions] = await pool.query(
-        `SELECT tq.id, tq.test_id, tq.question_id, q.question, q.option_a, q.option_b, q.option_c, q.option_d FROM test_questions tq JOIN questions q ON tq.question_id = q.id WHERE tq.test_id = ? AND tq.is_active = 1 ORDER BY tq.id ASC`,
-        [test_id],
-      );
+      const query = `
+        SELECT 
+          tq.id as mapping_id, 
+          tq.test_id, 
+          tq.question_id, 
+          q.*,
+          qc.category_name
+        FROM test_questions tq 
+        JOIN questions q ON tq.question_id = q.id 
+        LEFT JOIN question_category qc ON q.category_id = qc.id
+        WHERE tq.test_id = ? AND tq.is_active = 1 
+        ORDER BY tq.id ASC
+      `;
+      const [testQuestions] = await pool.query(query, [test_id]);
       return testQuestions;
     } catch (error) {
       throw new Error(error.message);
