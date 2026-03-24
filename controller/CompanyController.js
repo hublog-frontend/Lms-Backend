@@ -1,16 +1,29 @@
 const CompanyModel = require("../model/CompanyModel");
+const fs = require("fs/promises");
+const path = require("path");
 
 const addCompanyQuestion = async (req, res) => {
+  const {
+    company_id,
+    company_name,
+    company_logo,
+    skills,
+    created_date,
+    attachment_title,
+  } = req.body;
   try {
-    const {
-      company_id,
-      company_name,
-      company_logo,
-      skills,
-      created_date,
-      attachment_title,
-      attachment,
-    } = req.body;
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ message: "No files uploaded" });
+    }
+
+    const contentDataList = req.files.map((file) => ({
+      type: "document",
+      fileName: file.filename,
+      originalName: file.originalname,
+      fileSize: file.size,
+      mimeType: file.mimetype,
+      path: `/uploads/documents/${file.filename}`,
+    }));
     const result = await CompanyModel.addCompanyQuestions(
       company_id,
       company_name,
@@ -18,12 +31,25 @@ const addCompanyQuestion = async (req, res) => {
       skills,
       created_date,
       attachment_title,
-      attachment,
+      contentDataList,
     );
     return res
       .status(200)
       .json({ message: "Company question added successfully", result });
   } catch (error) {
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        try {
+          // multer stores the full/relative path in file.path
+          await fs.unlink(file.path);
+        } catch (unlinkErr) {
+          console.error(
+            "Failed to delete local file after error:",
+            unlinkErr.message,
+          );
+        }
+      }
+    }
     return res.status(500).json({ message: error.message });
   }
 };
@@ -46,7 +72,19 @@ const deleteCompanyQuestion = async (req, res) => {
     const result = await CompanyModel.deleteCompanyQuestion(company_id);
     return res
       .status(200)
-      .json({ message: "Company question deleted successfully", result });
+      .json({ message: "Company question has been deleted", data: result });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+const deleteAttachment = async (req, res) => {
+  try {
+    const { attachment_id } = req.query;
+    const result = await CompanyModel.deleteAttachment(attachment_id);
+    return res
+      .status(200)
+      .json({ message: "Attachment has been deleted", data: result });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
@@ -134,4 +172,5 @@ module.exports = {
   addCategory,
   getCategory,
   deleteCategory,
+  deleteAttachment,
 };

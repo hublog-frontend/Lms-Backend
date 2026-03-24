@@ -3,6 +3,7 @@ const path = require("path");
 const fs = require("fs");
 
 let isVideo;
+let isDocument;
 
 const fileFilter = (req, file, cb) => {
   const typeCategories = {
@@ -28,14 +29,16 @@ const fileFilter = (req, file, cb) => {
   };
 
   isVideo = typeCategories.video.includes(file.mimetype);
+  isDocument = typeCategories.document.includes(file.mimetype);
 
-  if (isVideo) {
+  if (isVideo || isDocument) {
     // Attach file type to request for later use
     req.fileType = isVideo ? "video" : "document";
     cb(null, true);
   } else {
     const allowedFormats = [
       ...typeCategories.video.map((v) => v.split("/")[1]),
+      ...typeCategories.document.map((v) => v.split("/")[1]),
     ].join(", ");
 
     cb(
@@ -47,7 +50,12 @@ const fileFilter = (req, file, cb) => {
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadPath = path.join(__dirname, "../uploads/course-videos");
+    let uploadPath;
+    if (isVideo) {
+      uploadPath = path.join(__dirname, "../uploads/course-videos");
+    } else if (isDocument) {
+      uploadPath = path.join(__dirname, "../uploads/documents");
+    }
     if (!fs.existsSync(uploadPath)) {
       fs.mkdirSync(uploadPath, { recursive: true });
     }
@@ -57,6 +65,7 @@ const storage = multer.diskStorage({
     const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
     const ext = path.extname(file.originalname);
     if (isVideo) cb(null, `video-${uniqueSuffix}${ext}`);
+    if (isDocument) cb(null, `document-${uniqueSuffix}${ext}`);
   },
 });
 
@@ -68,6 +77,15 @@ const uploadCourseVideo = multer({
   },
 });
 
+const uploadDocument = multer({
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5mb limit
+  },
+});
+
 module.exports = {
   uploadCourseVideo,
+  uploadDocument,
 };

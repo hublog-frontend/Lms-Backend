@@ -90,6 +90,7 @@ router.delete("/deleteQuestion", verifyToken, TestController.deleteQuestion);
 
 router.post(
   "/addCompanyQuestion",
+  upload.uploadDocument.array("content", 10),
   verifyToken,
   CompanyController.addCompanyQuestion,
 );
@@ -102,6 +103,11 @@ router.delete(
   "/deleteCompanyQuestion",
   verifyToken,
   CompanyController.deleteCompanyQuestion,
+);
+router.delete(
+  "/deleteAttachment",
+  verifyToken,
+  CompanyController.deleteAttachment,
 );
 router.post("/addToFavorite", verifyToken, CompanyController.addToFavorite);
 router.post(

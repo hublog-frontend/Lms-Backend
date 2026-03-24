@@ -1,4 +1,7 @@
+const { log } = require("console");
 const pool = require("../config/config");
+const fs = require("fs/promises");
+const path = require("path");
 
 const CompanyModel = {
   addCompanyQuestions: async (
@@ -8,7 +11,7 @@ const CompanyModel = {
     skills,
     created_date,
     attachment_title,
-    attachment,
+    contentDataList,
   ) => {
     try {
       let affectedRows = 0;
@@ -22,17 +25,45 @@ const CompanyModel = {
         ]);
         affectedRows += insertQuestion.affectedRows;
 
-        if (attachment) {
-          const query = `INSERT INTO company_attachments (company_id, title, attachment) VALUES (?, ?, ?)`;
-          const [insertAttachment] = await pool.query(query, [
+        if (contentDataList && contentDataList.length > 0) {
+          const attachmentsValues = contentDataList.map((contentData) => [
             insertQuestion.insertId,
+            contentData.type,
             attachment_title,
-            attachment,
+            contentData.fileName,
+            contentData.originalName,
+            contentData.fileSize,
+            contentData.mimeType,
+            contentData.path,
+            created_date,
+          ]);
+          const query = `INSERT INTO company_attachments(
+                            company_id,
+                            content_type,
+                            title,
+                            file_name,
+                            original_name,
+                            size,
+                            mime_type,
+                            file_path,
+                            created_date
+                        )
+                        VALUES ?`;
+          const [insertAttachment] = await pool.query(query, [
+            attachmentsValues,
           ]);
           affectedRows += insertAttachment.affectedRows;
         }
       } else {
-        const query = `UPDATE company_questions SET company_name = ?, company_logo = ?, skills = ? WHERE company_id = ?`;
+        const [isCompanyExist] = await pool.query(
+          `SELECT * FROM company_questions WHERE id = ?`,
+          [company_id],
+        );
+
+        if (isCompanyExist.length <= 0) {
+          throw new Error("Company not found");
+        }
+        const query = `UPDATE company_questions SET company_name = ?, company_logo = ?, skills = ? WHERE id = ?`;
         const [updateQuestion] = await pool.query(query, [
           company_name,
           company_logo,
@@ -41,14 +72,63 @@ const CompanyModel = {
         ]);
         affectedRows += updateQuestion.affectedRows;
 
-        if (attachment) {
-          const query = `UPDATE company_attachments SET title = ?, attachment = ? WHERE company_id = ?`;
-          const [updateAttachment] = await pool.query(query, [
-            attachment_title,
-            attachment,
+        if (contentDataList && contentDataList.length > 0) {
+          const [existingAttachments] = await pool.query(
+            `SELECT file_name FROM company_attachments WHERE company_id = ?`,
+            [company_id],
+          );
+
+          if (existingAttachments.length > 0) {
+            for (const attachment of existingAttachments) {
+              if (attachment.file_name) {
+                const filePath = path.join(
+                  __dirname,
+                  `../uploads/documents/${attachment.file_name}`,
+                );
+                try {
+                  await fs.unlink(filePath);
+                } catch (err) {
+                  console.error(
+                    "Failed to delete old attachment: ",
+                    err.message,
+                  );
+                }
+              }
+            }
+          }
+
+          await pool.query(
+            `DELETE FROM company_attachments WHERE company_id = ?`,
+            [company_id],
+          );
+
+          const attachmentsValues = contentDataList.map((contentData) => [
             company_id,
+            contentData.type,
+            attachment_title,
+            contentData.fileName,
+            contentData.originalName,
+            contentData.fileSize,
+            contentData.mimeType,
+            contentData.path,
+            created_date || new Date(),
           ]);
-          affectedRows += updateAttachment.affectedRows;
+          const insertQuery = `INSERT INTO company_attachments(
+                            company_id,
+                            content_type,
+                            title,
+                            file_name,
+                            original_name,
+                            size,
+                            mime_type,
+                            file_path,
+                            created_date
+                        )
+                        VALUES ?`;
+          const [insertAttachment] = await pool.query(insertQuery, [
+            attachmentsValues,
+          ]);
+          affectedRows += insertAttachment.affectedRows;
         }
       }
       return affectedRows;
@@ -83,21 +163,23 @@ const CompanyModel = {
       let attachmentsMap = new Map();
       if (ids.length > 0) {
         const [attachments] = await pool.query(
-          `SELECT id, company_id, title, attachment FROM company_attachments WHERE company_id IN (?)`,
+          `SELECT id, company_id, content_type, title, file_name, original_name, size, mime_type, file_path, created_date FROM company_attachments WHERE company_id IN (?)`,
           [ids],
         );
         attachments.forEach((attachment) => {
-          attachmentsMap.set(attachment.company_id, attachment);
+          if (!attachmentsMap.has(attachment.company_id)) {
+            attachmentsMap.set(attachment.company_id, []);
+          }
+          attachmentsMap.get(attachment.company_id).push(attachment);
         });
       }
 
       const combinedResult = result.map((item) => {
-        const attachment = attachmentsMap.get(item.id) || null;
+        const itemAttachments = attachmentsMap.get(item.id) || [];
         return {
           ...item,
           skills: JSON.parse(item.skills),
-          attachment: attachment ? attachment.attachment : null,
-          attachment_title: attachment ? attachment.title : null,
+          attachments: itemAttachments,
         };
       });
       return combinedResult;
@@ -108,8 +190,70 @@ const CompanyModel = {
 
   deleteCompanyQuestion: async (company_id) => {
     try {
+      let affectedRows = 0;
+      const [existingAttachments] = await pool.query(
+        `SELECT file_name FROM company_attachments WHERE company_id = ?`,
+        [company_id],
+      );
+
+      if (existingAttachments.length > 0) {
+        for (const attachment of existingAttachments) {
+          if (attachment.file_name) {
+            const filePath = path.join(
+              __dirname,
+              `../uploads/documents/${attachment.file_name}`,
+            );
+            try {
+              await fs.unlink(filePath);
+            } catch (err) {
+              console.error("Failed to delete old attachment: ", err.message);
+            }
+          }
+        }
+      }
+
       const query = `DELETE FROM company_questions WHERE id = ?`;
-      const result = await pool.query(query, [company_id]);
+      const [result] = await pool.query(query, [company_id]);
+
+      affectedRows += result.affectedRows;
+
+      const [deleteAttachments] = await pool.query(
+        `DELETE FROM company_attachments WHERE company_id = ?`,
+        [company_id],
+      );
+
+      affectedRows += deleteAttachments.affectedRows;
+
+      return affectedRows;
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  },
+
+  deleteAttachment: async (attachment_id) => {
+    try {
+      const [existingAttachment] = await pool.query(
+        `SELECT file_name FROM company_attachments WHERE id = ?`,
+        [attachment_id],
+      );
+
+      if (existingAttachment.length > 0) {
+        if (existingAttachment[0].file_name) {
+          const filePath = path.join(
+            __dirname,
+            `../uploads/documents/${existingAttachment[0].file_name}`,
+          );
+          try {
+            await fs.unlink(filePath);
+          } catch (err) {
+            console.error("Failed to delete old attachment: ", err.message);
+          }
+        }
+      }
+
+      const query = `DELETE FROM company_attachments WHERE id = ?`;
+      const [result] = await pool.query(query, [attachment_id]);
+
       return result.affectedRows;
     } catch (error) {
       throw new Error(error.message);
@@ -165,21 +309,23 @@ const CompanyModel = {
       let attachmentsMap = new Map();
       if (companyIds.length > 0) {
         const [attachments] = await pool.query(
-          `SELECT id, company_id, title, attachment FROM company_attachments WHERE company_id IN (?)`,
+          `SELECT id, company_id, content_type, title, file_name, original_name, size, mime_type, file_path, created_date FROM company_attachments WHERE company_id IN (?)`,
           [companyIds],
         );
         attachments.forEach((attachment) => {
-          attachmentsMap.set(attachment.company_id, attachment);
+          if (!attachmentsMap.has(attachment.company_id)) {
+            attachmentsMap.set(attachment.company_id, []);
+          }
+          attachmentsMap.get(attachment.company_id).push(attachment);
         });
       }
 
       const combinedResult = result.map((item) => {
-        const attachment = attachmentsMap.get(item.company_id) || null;
+        const itemAttachments = attachmentsMap.get(item.company_id) || [];
         return {
           ...item,
           skills: JSON.parse(item.skills),
-          attachment: attachment ? attachment.attachment : null,
-          attachment_title: attachment ? attachment.title : null,
+          attachments: itemAttachments,
         };
       });
       return combinedResult;
