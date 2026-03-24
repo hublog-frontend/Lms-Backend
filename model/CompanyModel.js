@@ -382,6 +382,55 @@ const CompanyModel = {
       throw new Error(error.message);
     }
   },
+
+  addSkill: async (skill_id, skill_name) => {
+    try {
+      let affectedRows = 0;
+      if (!skill_id) {
+        const [isSkill] = await pool.query(
+          `SELECT skill_id FROM skills WHERE skill_name = ?`,
+          [skill_name],
+        );
+        if (isSkill.length > 0) {
+          throw new Error("Skill already exists");
+        }
+        const query = `INSERT INTO skills (skill_name) VALUES (?)`;
+        const [result] = await pool.query(query, [skill_name]);
+        affectedRows += result.affectedRows;
+      } else {
+        const query = `UPDATE skills SET skill_name = ? WHERE skill_id = ?`;
+        const [result] = await pool.query(query, [skill_name, skill_id]);
+        affectedRows += result.affectedRows;
+      }
+      return affectedRows;
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  },
+
+  getSkill: async (skill_name) => {
+    try {
+      let query = `SELECT skill_id, skill_name AS name FROM skills WHERE is_active = 1`;
+      if (skill_name) {
+        query += ` AND skill_name LIKE '%${skill_name}%'`;
+      }
+      query += ` ORDER BY skill_name ASC`;
+      const [result] = await pool.query(query);
+      return result;
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  },
+
+  deleteSkill: async (skill_id) => {
+    try {
+      const query = `DELETE FROM skills WHERE skill_id = ?`;
+      const result = await pool.query(query, [skill_id]);
+      return result.affectedRows;
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  },
 };
 
 module.exports = CompanyModel;

@@ -12,6 +12,7 @@ const AssignmentController = require("../controller/AssignmentController");
 const CompanyController = require("../controller/CompanyController");
 const BookmarkController = require("../controller/BookmarkController");
 const CompilerController = require("../controller/CompilerController");
+const JobController = require("../controller/JobController");
 
 router.post("/login", LoginController.login);
 router.post("/createCourse", verifyToken, CourseController.createCourse);
@@ -131,5 +132,25 @@ router.delete("/deleteCategory", verifyToken, CompanyController.deleteCategory);
 
 router.post("/runCode", verifyToken, CompilerController.executeCode);
 router.post("/submitCode", verifyToken, CompilerController.executeCode);
+
+router.post(
+  "/createJob",
+  upload.uploadDocument.single("job_description"),
+  verifyToken,
+  JobController.createJob,
+);
+router.get("/getJobs", verifyToken, JobController.getJobs);
+router.get("/getJobById/:id", verifyToken, JobController.getJobById);
+router.put(
+  "/updateJob/:id",
+  upload.uploadDocument.single("job_description"),
+  verifyToken,
+  JobController.updateJob,
+);
+router.delete("/deleteJob/:id", verifyToken, JobController.deleteJob);
+
+router.post("/addSkill", verifyToken, CompanyController.addSkill);
+router.get("/getSkill", verifyToken, CompanyController.getSkill);
+router.delete("/deleteSkill", verifyToken, CompanyController.deleteSkill);
 
 module.exports = router;

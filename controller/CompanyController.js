@@ -162,6 +162,42 @@ const deleteCategory = async (req, res) => {
   }
 };
 
+const addSkill = async (req, res) => {
+  try {
+    const { skill_id, skill_name } = req.body;
+    const result = await CompanyModel.addSkill(skill_id, skill_name);
+    return res
+      .status(200)
+      .json({ message: "Skill added successfully", data: result });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+const getSkill = async (req, res) => {
+  try {
+    const { skill_name } = req.query;
+    const result = await CompanyModel.getSkill(skill_name);
+    return res
+      .status(200)
+      .json({ message: "Skill fetched successfully", result });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+const deleteSkill = async (req, res) => {
+  try {
+    const { skill_id } = req.query;
+    const result = await CompanyModel.deleteSkill(skill_id);
+    return res
+      .status(200)
+      .json({ message: "Skill deleted successfully", result });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   addCompanyQuestion,
   getCompanyQuestions,
@@ -173,4 +209,7 @@ module.exports = {
   getCategory,
   deleteCategory,
   deleteAttachment,
+  addSkill,
+  getSkill,
+  deleteSkill,
 };
