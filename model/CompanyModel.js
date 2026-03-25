@@ -12,6 +12,7 @@ const CompanyModel = {
     created_date,
     attachment_title,
     contentDataList,
+    existing_attachments,
   ) => {
     try {
       let affectedRows = 0;
@@ -72,36 +73,46 @@ const CompanyModel = {
         ]);
         affectedRows += updateQuestion.affectedRows;
 
-        if (contentDataList && contentDataList.length > 0) {
-          const [existingAttachments] = await pool.query(
-            `SELECT file_name FROM company_attachments WHERE company_id = ?`,
-            [company_id],
-          );
+        // Sync attachments
+        const [currentAttachments] = await pool.query(
+          `SELECT id, file_name FROM company_attachments WHERE company_id = ?`,
+          [company_id],
+        );
 
-          if (existingAttachments.length > 0) {
-            for (const attachment of existingAttachments) {
-              if (attachment.file_name) {
-                const filePath = path.join(
-                  __dirname,
-                  `../uploads/documents/${attachment.file_name}`,
-                );
-                try {
-                  await fs.unlink(filePath);
-                } catch (err) {
-                  console.error(
-                    "Failed to delete old attachment: ",
-                    err.message,
-                  );
-                }
+        let keepIds = [];
+        if (existing_attachments) {
+          keepIds = Array.isArray(existing_attachments)
+            ? existing_attachments.map((id) => parseInt(id))
+            : [parseInt(existing_attachments)];
+        }
+
+        const toDelete = currentAttachments.filter(
+          (att) => !keepIds.includes(parseInt(att.id)),
+        );
+
+        if (toDelete.length > 0) {
+          for (const att of toDelete) {
+            if (att.file_name) {
+              const filePath = path.join(
+                __dirname,
+                `../uploads/documents/${att.file_name}`,
+              );
+              try {
+                await fs.unlink(filePath);
+              } catch (err) {
+                console.error("Failed to delete attachment: ", err.message);
               }
             }
           }
-
-          await pool.query(
-            `DELETE FROM company_attachments WHERE company_id = ?`,
-            [company_id],
+          const deleteIds = toDelete.map((att) => att.id);
+          const [deleteResult] = await pool.query(
+            `DELETE FROM company_attachments WHERE id IN (?)`,
+            [deleteIds],
           );
+          affectedRows += deleteResult.affectedRows;
+        }
 
+        if (contentDataList && contentDataList.length > 0) {
           const attachmentsValues = contentDataList.map((contentData) => [
             company_id,
             contentData.type,

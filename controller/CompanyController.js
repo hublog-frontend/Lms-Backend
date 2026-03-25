@@ -10,20 +10,23 @@ const addCompanyQuestion = async (req, res) => {
     skills,
     created_date,
     attachment_title,
+    existing_attachments,
   } = req.body;
   try {
     if (!company_id && (!req.files || req.files.length === 0)) {
       return res.status(400).json({ message: "No files uploaded" });
     }
 
-    const contentDataList = req.files ? req.files.map((file) => ({
-      type: "document",
-      fileName: file.filename,
-      originalName: file.originalname,
-      fileSize: file.size,
-      mimeType: file.mimetype,
-      path: `/uploads/documents/${file.filename}`,
-    })) : [];
+    const contentDataList = req.files
+      ? req.files.map((file) => ({
+          type: "document",
+          fileName: file.filename,
+          originalName: file.originalname,
+          fileSize: file.size,
+          mimeType: file.mimetype,
+          path: `/uploads/documents/${file.filename}`,
+        }))
+      : [];
     const result = await CompanyModel.addCompanyQuestions(
       company_id,
       company_name,
@@ -32,6 +35,7 @@ const addCompanyQuestion = async (req, res) => {
       created_date,
       attachment_title,
       contentDataList,
+      existing_attachments,
     );
     return res
       .status(200)
