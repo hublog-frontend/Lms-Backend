@@ -153,4 +153,8 @@ router.post("/addSkill", verifyToken, CompanyController.addSkill);
 router.get("/getSkill", verifyToken, CompanyController.getSkill);
 router.delete("/deleteSkill", verifyToken, CompanyController.deleteSkill);
 
+router.post("/addStream", verifyToken, JobController.addStreams);
+router.get("/getStreams", verifyToken, JobController.getStreams);
+router.delete("/deleteStream", verifyToken, JobController.deleteStream);
+
 module.exports = router;
