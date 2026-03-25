@@ -12,18 +12,18 @@ const addCompanyQuestion = async (req, res) => {
     attachment_title,
   } = req.body;
   try {
-    if (!req.files || req.files.length === 0) {
+    if (!company_id && (!req.files || req.files.length === 0)) {
       return res.status(400).json({ message: "No files uploaded" });
     }
 
-    const contentDataList = req.files.map((file) => ({
+    const contentDataList = req.files ? req.files.map((file) => ({
       type: "document",
       fileName: file.filename,
       originalName: file.originalname,
       fileSize: file.size,
       mimeType: file.mimetype,
       path: `/uploads/documents/${file.filename}`,
-    }));
+    })) : [];
     const result = await CompanyModel.addCompanyQuestions(
       company_id,
       company_name,
